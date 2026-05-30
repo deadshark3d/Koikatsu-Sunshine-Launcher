@@ -1,0 +1,809 @@
+use std::process::Command;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::{Path, PathBuf};
+
+// Estructuras de datos
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SetupConfig {
+    #[serde(rename = "Size")]
+    size: String,
+    #[serde(rename = "Width")]
+    width: i32,
+    #[serde(rename = "Height")]
+    height: i32,
+    #[serde(rename = "Quality")]
+    quality: i32,
+    #[serde(rename = "FullScreen")]
+    full_screen: bool,
+    #[serde(rename = "Display")]
+    display: i32,
+    #[serde(rename = "Language")]
+    language: i32,
+}
+
+// Para la configuración del launcher (fondo, logo, etc)
+
+#[derive(Debug, Serialize, Deserialize)]
+struct LanguageOption {
+    name: String,
+    index: i32,
+}
+
+// Configuración personalizada del launcher, guardada en UserData/KoikatsuSunshineLauncher/settings.json
+
+#[derive(Debug, Serialize, Deserialize)]
+struct LauncherSettings {
+    #[serde(default)]
+    background: String,
+    #[serde(default)]
+    logo: String,
+    #[serde(default)]
+    hide_logo: bool,
+}
+
+// Funciones auxiliares para manejar archivos, rutas, imágenes, etc.
+
+fn launcher_user_data() -> Result<PathBuf, String> {
+    let root = game_root()?;
+    let dir = PathBuf::from(&root)
+        .join("UserData")
+        .join("KoikatsuSunshineLauncher");
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("No se pudo crear la carpeta del launcher: {}", e))?;
+    Ok(dir)
+}
+
+// La ruta completa al archivo de configuración del launcher, donde se guardan las preferencias personalizadas (fondo, logo, etc).
+
+fn settings_path(root: &Path) -> PathBuf {
+    root.join("settings.json")
+}
+
+// Carga la configuración personalizada del launcher desde el archivo settings.json, si existe. Si no existe o hay un error, devuelve None.
+
+fn load_settings(root: &Path) -> Option<LauncherSettings> {
+    let settings_file = settings_path(root);
+    let data = fs::read_to_string(&settings_file).ok()?;
+    serde_json::from_str::<LauncherSettings>(&data).ok()
+}
+
+// Convierte una imagen a una data URL para mostrarla en el frontend. Soporta PNG, JPG, JPEG, WEBP y BMP.
+
+fn image_to_data_url(path: &Path) -> Result<String, String> {
+    let bytes = fs::read(path)
+        .map_err(|e| format!("No se pudo leer la imagen: {}", e))?;
+    let ext = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_lowercase();
+    let mime = match ext.as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp"         => "image/webp",
+        "bmp"          => "image/bmp",
+        _              => "image/png",
+    };
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    Ok(format!("data:{};base64,{}", mime, STANDARD.encode(&bytes)))
+}
+
+// Obtiene la ruta raíz del juego a partir de la ubicación del launcher. Verifica que KoikatsuSunshine.exe exista en esa carpeta para confirmar que es la ruta correcta.
+fn game_root() -> Result<String, String> {
+    let launcher_path = std::env::current_exe()
+        .map_err(|e| format!("No se pudo obtener la ruta del launcher: {}", e))?;
+    let launcher_dir = launcher_path
+        .parent()
+        .ok_or("No se pudo determinar la carpeta del launcher")?;
+
+    let game_exe = launcher_dir.join("KoikatsuSunshine.exe");
+    if game_exe.exists() {
+        Ok(launcher_dir
+            .to_str()
+            .ok_or("La ruta contiene caracteres no válidos")?
+            .to_string())
+    } else {
+        Err(format!(
+            "No se encontró KoikatsuSunshine.exe en la carpeta del launcher.\nColocá el launcher dentro de la carpeta del juego.\nRuta actual: {}",
+            launcher_dir.display()
+        ))
+    }
+}
+
+// funciones expuestas al frontend para obtener idiomas, leer y guardar configuración, lanzar el juego, abrir carpetas, etc.
+
+#[tauri::command]
+fn get_supported_languages() -> Vec<LanguageOption> {
+    vec![
+        LanguageOption { name: "Japanese".to_string(), index: 0 },
+        LanguageOption { name: "Chinese".to_string(), index: 1 },
+        LanguageOption { name: "Korean".to_string(), index: 2 },
+        LanguageOption { name: "Thai".to_string(), index: 3 },
+        LanguageOption { name: "Vietnamese".to_string(), index: 4 },
+        LanguageOption { name: "Indonesian".to_string(), index: 5 },
+        LanguageOption { name: "Filipino".to_string(), index: 6 },
+        LanguageOption { name: "Hindi".to_string(), index: 7 },
+        LanguageOption { name: "Urdu".to_string(), index: 8 },
+        LanguageOption { name: "English".to_string(), index: 9 },
+        LanguageOption { name: "French".to_string(), index: 10 },
+        LanguageOption { name: "German".to_string(), index: 11 },
+        LanguageOption { name: "Italian".to_string(), index: 12 },
+        LanguageOption { name: "Dutch".to_string(), index: 13 },
+        LanguageOption { name: "Finnish".to_string(), index: 14 },
+        LanguageOption { name: "Swedish".to_string(), index: 15 },
+        LanguageOption { name: "Norwegian".to_string(), index: 16 },
+        LanguageOption { name: "Polish".to_string(), index: 17 },
+        LanguageOption { name: "Ukrainian".to_string(), index: 18 },
+        LanguageOption { name: "Serbian".to_string(), index: 19 },
+        LanguageOption { name: "Bulgarian".to_string(), index: 20 },
+        LanguageOption { name: "Croatian".to_string(), index: 21 },
+        LanguageOption { name: "Czech".to_string(), index: 22 },
+        LanguageOption { name: "Slovak".to_string(), index: 23 },
+        LanguageOption { name: "Hungarian".to_string(), index: 24 },
+        LanguageOption { name: "Romanian".to_string(), index: 25 },
+        LanguageOption { name: "Greek".to_string(), index: 26 },
+        LanguageOption { name: "Estonian".to_string(), index: 27 },
+        LanguageOption { name: "Latvian".to_string(), index: 28 },
+        LanguageOption { name: "Spanish".to_string(), index: 29 },
+        LanguageOption { name: "Portuguese".to_string(), index: 30 },
+        LanguageOption { name: "Georgian".to_string(), index: 31 },
+        LanguageOption { name: "Azerbaijani".to_string(), index: 32 },
+        LanguageOption { name: "Russian".to_string(), index: 33 },
+        LanguageOption { name: "Kazakh".to_string(), index: 34 },
+        LanguageOption { name: "Uzbek".to_string(), index: 35 },
+        LanguageOption { name: "Arabic".to_string(), index: 36 },
+        LanguageOption { name: "Persian".to_string(), index: 37 },
+        LanguageOption { name: "Turkish".to_string(), index: 38 },
+        LanguageOption { name: "Hebrew".to_string(), index: 39 },
+        LanguageOption { name: "Kurdish".to_string(), index: 40 },
+    ]
+}
+
+// Lee el idioma actualmente configurado en AutoTranslatorConfig.ini para mostrarlo seleccionado en el dropdown. Si no se encuentra el INI o la línea, devuelve una cadena vacía.
+
+#[tauri::command]
+fn get_current_language_from_ini() -> Result<String, String> {
+    let root = game_root()?;
+    let ini_path = PathBuf::from(&root).join("BepInEx/config/AutoTranslatorConfig.ini");
+    if !ini_path.exists() {
+        return Ok(String::new());
+    }
+
+    let content = fs::read_to_string(&ini_path)
+        .map_err(|e| format!("No se pudo leer AutoTranslatorConfig.ini: {}", e))?;
+
+    let mut in_general = false;
+    for line in content.lines() {
+        if line.trim() == "[General]" {
+            in_general = true;
+        } else if line.starts_with('[') && line.ends_with(']') {
+            in_general = false;
+        } else if in_general && line.trim_start().starts_with("Language=") {
+            return Ok(line.trim_start().strip_prefix("Language=").unwrap_or("").to_string());
+        }
+    }
+    Ok(String::new())
+}
+
+// Lanza el juego ejecutando KoikatsuSunshine.exe. El comando se ejecuta en la carpeta raíz del juego para asegurar que se carguen los mods y configuraciones correctamente. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn launch_game() -> Result<String, String> {
+    let root = game_root()?;
+    let game_exe = PathBuf::from(&root).join("KoikatsuSunshine.exe");
+    Command::new(&game_exe)
+        .current_dir(&root)
+        .spawn()
+        .map_err(|e| format!("Error al ejecutar el juego: {}", e))?;
+    Ok("Juego iniciado correctamente.".to_string())
+}
+
+// Lanza el Chara Studio ejecutando CharaStudio.exe. El comando se ejecuta en la carpeta raíz del juego para asegurar que se carguen los mods y configuraciones correctamente. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn launch_studio() -> Result<String, String> {
+    let root = game_root()?;
+    let studio_exe = PathBuf::from(&root).join("CharaStudio.exe");
+    Command::new(&studio_exe)
+        .current_dir(&root)
+        .spawn()
+        .map_err(|e| format!("Error al ejecutar el Studio: {}", e))?;
+    Ok("Studio iniciado correctamente.".to_string())
+}
+
+// Abre una carpeta dentro de la ruta del juego usando el explorador de archivos. La ruta es relativa a la carpeta raíz del juego. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn open_folder(relative_path: String) -> Result<String, String> {
+    let root = game_root()?;
+    let full_path = PathBuf::from(&root).join(&relative_path);
+    if !full_path.exists() {
+        return Err(format!("La carpeta no existe: {}", full_path.display()));
+    }
+    Command::new("explorer")
+        .arg(&full_path)
+        .spawn()
+        .map_err(|e| format!("Error al abrir la carpeta: {}", e))?;
+    Ok(format!("Carpeta abierta: {}", full_path.display()))
+}
+
+// Lee el archivo setup.xml, decodifica su contenido desde UTF-16, lo parsea como XML y devuelve la configuración actual del juego. Si hay algún error (archivo no encontrado, error de lectura, error de decodificación o error de parseo), devuelve un mensaje de error para mostrar al usuario.
+
+#[tauri::command]
+fn get_setup_xml() -> Result<SetupConfig, String> {
+    let root = game_root()?;
+    let setup_path = PathBuf::from(&root).join("UserData/setup.xml");
+    let bytes = fs::read(&setup_path)
+        .map_err(|e| format!("No se pudo leer setup.xml: {}", e))?;
+
+    let u16s: Vec<u16> = bytes
+        .chunks_exact(2)
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+        .collect();
+
+    let content = if u16s.first() == Some(&0xFEFF) {
+        String::from_utf16(&u16s[1..])
+    } else {
+        String::from_utf16(&u16s)
+    }
+    .map_err(|e| format!("Error al decodificar UTF-16: {}", e))?;
+
+    let content_fixed = content.replace("encoding=\"utf-16\"", "encoding=\"utf-8\"");
+
+    serde_xml_rs::from_str(&content_fixed)
+        .map_err(|e| format!("Error al parsear setup.xml: {}", e))
+}
+
+// Toma la configuración del juego y el código de idioma seleccionado, genera el contenido XML, lo codifica en UTF-16 y lo guarda en setup.xml. Luego actualiza AutoTranslatorConfig.ini con el nuevo idioma. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn save_setup_xml(config: SetupConfig, language_code: String) -> Result<String, String> {
+    let root = game_root()?;
+    let setup_path = PathBuf::from(&root).join("UserData/setup.xml");
+
+    let body = format!(
+        "<Setting>\r\n  <Size>{}</Size>\r\n  <Width>{}</Width>\r\n  <Height>{}</Height>\r\n  <Quality>{}</Quality>\r\n  <FullScreen>{}</FullScreen>\r\n  <Display>{}</Display>\r\n  <Language>{}</Language>\r\n</Setting>",
+        config.size,
+        config.width,
+        config.height,
+        config.quality,
+        config.full_screen,
+        config.display,
+        config.language,
+    );
+    let full_xml = format!("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n{}", body);
+
+    let mut encoded: Vec<u16> = vec![0xFEFF];
+    encoded.extend(full_xml.encode_utf16());
+    let bytes: Vec<u8> = encoded.iter().flat_map(|&c| c.to_le_bytes()).collect();
+    fs::write(&setup_path, bytes)
+        .map_err(|e| format!("Error al guardar setup.xml: {}", e))?;
+
+    if !language_code.is_empty() {
+        update_auto_translator_ini(&root, &language_code)?;
+    }
+
+    Ok("Configuración guardada correctamente.".to_string())
+}
+
+// Configura la fuente de fallback en AutoTranslatorConfig.ini según el idioma seleccionado. Algunos idiomas requieren fuentes especiales para mostrar los caracteres correctamente. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn set_fallback_font(language_code: String) -> Result<String, String> {
+    let root = game_root()?;
+
+    let special_fonts: std::collections::HashMap<&str, &str> = [
+        ("th", "thai_font"),
+        ("hi", "devanagari_font"),
+        ("ka", "georgian_font"),
+        ("ar", "arabic_font"),
+        ("fa", "arabic_font"),
+        ("ur", "arabic_font"),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let default_font = "arialuni_sdf_u2019";
+    let font_bundle = special_fonts.get(language_code.as_str()).unwrap_or(&default_font);
+    let font_path = format!("fonts/{}", font_bundle);
+
+    update_ini_font_lines(&root, &font_path)?;
+
+    Ok(format!("Fuente configurada a '{}'", font_path))
+}
+
+fn update_auto_translator_ini(game_root: &str, language_code: &str) -> Result<(), String> {
+    let ini_path = PathBuf::from(game_root).join("BepInEx/config/AutoTranslatorConfig.ini");
+    if !ini_path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(&ini_path)
+        .map_err(|e| format!("No se pudo leer AutoTranslatorConfig.ini: {}", e))?;
+    let mut new_content = String::new();
+    let mut in_general = false;
+
+    for line in content.lines() {
+        if line.trim() == "[General]" {
+            in_general = true;
+            new_content.push_str(line);
+            new_content.push('\n');
+        } else if line.starts_with('[') && line.ends_with(']') {
+            in_general = false;
+            new_content.push_str(line);
+            new_content.push('\n');
+        } else if in_general && line.trim_start().starts_with("Language=") {
+            new_content.push_str(&format!("Language={}", language_code));
+            new_content.push('\n');
+        } else {
+            new_content.push_str(line);
+            new_content.push('\n');
+        }
+    }
+
+    fs::write(&ini_path, new_content)
+        .map_err(|e| format!("Error al guardar AutoTranslatorConfig.ini: {}", e))
+}
+
+fn update_ini_font_lines(game_root: &str, font_bundle: &str) -> Result<(), String> {
+    let ini_path = PathBuf::from(game_root).join("BepInEx/config/AutoTranslatorConfig.ini");
+    if !ini_path.exists() {
+        return Err("AutoTranslatorConfig.ini no encontrado".to_string());
+    }
+
+    let content = fs::read_to_string(&ini_path)
+        .map_err(|e| format!("No se pudo leer el INI: {}", e))?;
+    let mut new_content = String::new();
+    let mut in_behaviour = false;
+    let mut override_written = false;
+    let mut fallback_written = false;
+
+    for line in content.lines() {
+        if line.trim() == "[Behaviour]" {
+            in_behaviour = true;
+            new_content.push_str(line);
+            new_content.push('\n');
+        } else if line.starts_with('[') && line.ends_with(']') {
+            if in_behaviour {
+                if !override_written {
+                    new_content.push_str(&format!("OverrideFontTextMeshPro={}\n", font_bundle));
+                    override_written = true;
+                }
+                if !fallback_written {
+                    new_content.push_str(&format!("FallbackFontTextMeshPro={}\n", font_bundle));
+                    fallback_written = true;
+                }
+            }
+            in_behaviour = false;
+            new_content.push_str(line);
+            new_content.push('\n');
+        } else if in_behaviour && line.trim_start().starts_with("OverrideFontTextMeshPro=") {
+            new_content.push_str(&format!("OverrideFontTextMeshPro={}", font_bundle));
+            new_content.push('\n');
+            override_written = true;
+        } else if in_behaviour && line.trim_start().starts_with("FallbackFontTextMeshPro=") {
+            new_content.push_str(&format!("FallbackFontTextMeshPro={}", font_bundle));
+            new_content.push('\n');
+            fallback_written = true;
+        } else {
+            new_content.push_str(line);
+            new_content.push('\n');
+        }
+    }
+    if in_behaviour {
+        if !override_written {
+            new_content.push_str(&format!("OverrideFontTextMeshPro={}\n", font_bundle));
+        }
+        if !fallback_written {
+            new_content.push_str(&format!("FallbackFontTextMeshPro={}\n", font_bundle));
+        }
+    }
+
+    fs::write(&ini_path, new_content)
+        .map_err(|e| format!("Error al guardar el INI: {}", e))
+}
+
+// Configura la fuente de fallback en AutoTranslatorConfig.ini según el idioma seleccionado. Algunos idiomas requieren fuentes especiales para mostrar los caracteres correctamente. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn initialize_fonts(language_code: String) -> Result<String, String> {
+    let root = game_root()?;
+
+    let special_fonts: std::collections::HashMap<&str, &str> = [
+        ("th", "thai_font"),
+        ("hi", "devanagari_font"),
+        ("ka", "georgian_font"),
+        ("ar", "arabic_font"),
+        ("fa", "arabic_font"),
+        ("ur", "arabic_font"),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let default_font = "arialuni_sdf_u2019";
+    let font_bundle = special_fonts.get(language_code.as_str()).unwrap_or(&default_font);
+    let font_path = format!("fonts/{}", font_bundle);
+
+    update_ini_font_lines(&root, &font_path)?;
+
+    Ok(format!("Fuentes configuradas a '{}'", font_path))
+}
+
+// función auxiliar para encontrar el archivo de un plugin específico (.dll o .dl_) dentro de la carpeta BepInEx/plugins, buscando también en subcarpetas. Devuelve la ruta completa al archivo si se encuentra, o None si no se encuentra.
+
+fn find_plugin_file(root: &PathBuf, base_name: &str) -> Option<PathBuf> {
+    let plugins_dir = root.join("BepInEx/plugins");
+    if !plugins_dir.exists() {
+        return None;
+    }
+    let dll_name = format!("{}.dll", base_name);
+    let dl_name = format!("{}.dl_", base_name);
+
+    // buscar en raíz de plugins
+    for ext in &[&dll_name, &dl_name] {
+        let path = plugins_dir.join(ext);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    // buscar en subcarpetas (un nivel)
+    if let Ok(entries) = std::fs::read_dir(&plugins_dir) {
+        for entry in entries.flatten() {
+            let sub_dir = entry.path();
+            if sub_dir.is_dir() {
+                for ext in &[&dll_name, &dl_name] {
+                    let path = sub_dir.join(ext);
+                    if path.exists() {
+                        return Some(path);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+// Lee el estado de los plugins (activado o desactivado) buscando sus archivos .dll o .dl_ en la carpeta BepInEx/plugins. Devuelve un HashMap con el ID del plugin y su estado (true para activo, false para inactivo). Si no se encuentra el archivo de un plugin, se considera inactivo.
+
+#[tauri::command]
+fn get_plugin_states() -> Result<std::collections::HashMap<String, bool>, String> {
+    let root = PathBuf::from(game_root()?);
+    let mut states = std::collections::HashMap::new();
+
+    let plugins = [
+        ("RimRemover", "KKS_RimRemover"),
+        ("AutoSave", "KKS_Autosave"),
+        ("Stiletto", "KKS_Stiletto"),
+    ];
+
+    for (id, base_name) in &plugins {
+        let file = find_plugin_file(&root, base_name);
+        let is_active = file
+            .as_ref()
+            .map(|p| p.extension().unwrap_or_default() == "dll")
+            .unwrap_or(false);
+        states.insert(id.to_string(), is_active);
+    }
+
+    Ok(states)
+}
+
+// Activa o desactiva un plugin renombrando su archivo entre .dll (activo) y .dl_ (inactivo). Busca el archivo del plugin en la carpeta BepInEx/plugins (incluyendo subcarpetas) y cambia su extensión según la acción. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn toggle_plugin(plugin_id: String, enable: bool) -> Result<String, String> {
+    let root = PathBuf::from(game_root()?);
+    let base_name = match plugin_id.as_str() {
+        "RimRemover" => "KKS_RimRemover",
+        "AutoSave" => "KKS_Autosave",
+        "Stiletto" => "KKS_Stiletto",
+        _ => return Err("Plugin desconocido".to_string()),
+    };
+
+    // Buscar el archivo actual (puede estar en la raíz o en cualquier subcarpeta)
+    let current_file = find_plugin_file(&root, base_name)
+        .ok_or_else(|| format!("No se encontró el archivo de {}", plugin_id))?;
+
+    // Averiguar si ya está activo (.dll) o inactivo (.dl_)
+    let is_active = current_file.extension().unwrap_or_default() == "dll";
+
+    if enable && is_active {
+        return Ok(format!("{} ya estaba activado", plugin_id));
+    }
+    if !enable && !is_active {
+        return Ok(format!("{} ya estaba desactivado", plugin_id));
+    }
+
+    // Nuevo nombre según la acción (cambiar solo la extensión)
+    let new_ext = if enable { "dll" } else { "dl_" };
+    let new_path = current_file.with_extension(new_ext);
+
+    fs::rename(&current_file, &new_path)
+        .map_err(|e| format!("Error al {} {}: {}", if enable { "activar" } else { "desactivar" }, plugin_id, e))?;
+
+    Ok(format!("{} {}", plugin_id, if enable { "activado" } else { "desactivado" }))
+}
+
+// Lee el estado de la consola de BepInEx buscando la sección [Logging.Console] en BepInEx.cfg. Devuelve true si encuentra "Enabled = true", false si encuentra "Enabled = false" o si no encuentra la sección o la línea. Si hay un error al leer el archivo, devuelve un mensaje de error para mostrar al usuario.
+
+#[tauri::command]
+fn get_console_enabled() -> Result<bool, String> {
+    let root = game_root()?;
+    let config_path = PathBuf::from(&root).join("BepInEx/config/BepInEx.cfg");
+    if !config_path.exists() {
+        return Ok(false);
+    }
+    let content = fs::read_to_string(&config_path)
+        .map_err(|e| format!("No se pudo leer BepInEx.cfg: {}", e))?;
+    let mut in_console_section = false;
+    for line in content.lines() {
+        if line.trim().eq_ignore_ascii_case("[Logging.Console]") {
+            in_console_section = true;
+        } else if line.starts_with('[') && line.ends_with(']') {
+            in_console_section = false;
+        } else if in_console_section && line.trim_start().starts_with("Enabled") {
+            return Ok(line.contains("true"));
+        }
+    }
+    Ok(false)
+}
+
+// Activa o desactiva la consola de BepInEx editando la sección [Logging.Console] en BepInEx.cfg. Si la sección o la línea no existen, las crea. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn set_console_enabled(enable: bool) -> Result<String, String> {
+    let root = game_root()?;
+    let config_path = PathBuf::from(&root).join("BepInEx/config/BepInEx.cfg");
+    let mut lines: Vec<String> = if config_path.exists() {
+        fs::read_to_string(&config_path)
+            .map_err(|e| format!("No se pudo leer BepInEx.cfg: {}", e))?
+            .lines()
+            .map(|s| s.to_string())
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    let console_header_idx = lines.iter().position(|l| l.trim().eq_ignore_ascii_case("[Logging.Console]"));
+    if let Some(idx) = console_header_idx {
+        let mut found = false;
+        for i in (idx + 1)..lines.len() {
+            if lines[i].starts_with('[') {
+                break;
+            }
+            if lines[i].trim_start().starts_with("Enabled") {
+                lines[i] = format!("Enabled = {}", if enable { "true" } else { "false" });
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            lines.insert(idx + 1, format!("Enabled = {}", if enable { "true" } else { "false" }));
+        }
+    } else {
+        lines.push(String::new());
+        lines.push("[Logging.Console]".to_string());
+        lines.push(format!("Enabled = {}", if enable { "true" } else { "false" }));
+    }
+
+    fs::write(&config_path, lines.join("\n"))
+        .map_err(|e| format!("Error al guardar BepInEx.cfg: {}", e))?;
+    Ok("Configuración de consola actualizada.".to_string())
+}
+
+// Abre un diálogo para seleccionar una imagen, la copia a la carpeta del launcher, actualiza settings.json con el nuevo fondo y devuelve la imagen como data URL para mostrarla en el frontend. Soporta PNG, JPG, JPEG, WEBP y BMP. Si el usuario cancela el diálogo, devuelve una cadena vacía. Si hay algún error, devuelve un mensaje de error para mostrar al usuario.
+
+#[tauri::command]
+async fn pick_and_set_background(app: tauri::AppHandle) -> Result<String, String> {
+    use tauri_plugin_dialog::DialogExt;
+    use tokio::sync::oneshot;
+
+    let (tx, rx) = oneshot::channel();
+
+    app.dialog()
+        .file()
+        .add_filter("Images", &["png", "jpg", "jpeg", "webp", "bmp"])
+        .pick_file(move |f| { let _ = tx.send(f); });
+
+    let file = rx.await.map_err(|_| "Dialog error".to_string())?;
+
+    let path_str = match file {
+        Some(p) => p.to_string(),
+        None    => return Ok(String::new()),
+    };
+
+    let src = PathBuf::from(&path_str);
+    let ext = src.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_lowercase();
+
+    if !["png", "jpg", "jpeg", "webp", "bmp"].contains(&ext.as_str()) {
+        return Err("Formato no soportado".into());
+    }
+
+    let dir = launcher_user_data()
+        .map_err(|e| format!("No se pudo preparar la carpeta del launcher: {}", e))?;
+
+    // Eliminar cualquier fondo personalizado anterior
+    for old_ext in &["png", "jpg", "jpeg", "webp", "bmp"] {
+        let _ = fs::remove_file(dir.join(format!("background.{}", old_ext)));
+    }
+
+    let dest = dir.join(format!("background.{}", ext));
+    fs::copy(&src, &dest).map_err(|e| format!("Error al copiar imagen: {}", e))?;
+
+    // Preserve existing settings, only update background
+    let mut settings = launcher_user_data()
+        .ok()
+        .and_then(|d| load_settings(&d))
+        .unwrap_or_else(|| LauncherSettings {
+            background: String::new(),
+            logo: String::new(),
+            hide_logo: false,
+        });
+    settings.background = format!("background.{}", ext);
+    fs::write(
+        settings_path(&dir),
+        serde_json::to_string_pretty(&settings)
+            .map_err(|e| format!("Error al serializar settings: {}", e))?,
+    )
+    .map_err(|e| format!("No se pudo guardar settings: {}", e))?;
+
+    image_to_data_url(&dest)
+}
+
+// Lee el fondo personalizado configurado en settings.json, lo convierte a data URL y lo devuelve para mostrarlo en el frontend. Si no hay un fondo configurado o si hay algún error (archivo no encontrado, error de lectura, error de conversión), devuelve None.
+
+#[tauri::command]
+fn get_custom_background() -> Option<String> {
+    let dir = launcher_user_data().ok()?;
+    let settings = load_settings(&dir)?;
+    let candidate = dir.join(&settings.background);
+    if candidate.exists() {
+        image_to_data_url(&candidate).ok()
+    } else {
+        None
+    }
+}
+
+// Abre un diálogo para seleccionar una imagen, la copia a la carpeta del launcher, actualiza settings.json con el nuevo logo y devuelve la imagen como data URL para mostrarla en el frontend. Soporta PNG, JPG, JPEG, WEBP y BMP. Si el usuario cancela el diálogo, devuelve una cadena vacía. Si hay algún error, devuelve un mensaje de error para mostrar al usuario.
+
+#[tauri::command]
+async fn pick_and_set_logo(app: tauri::AppHandle) -> Result<String, String> {
+    use tauri_plugin_dialog::DialogExt;
+    use tokio::sync::oneshot;
+
+    let (tx, rx) = oneshot::channel();
+    app.dialog()
+        .file()
+        .add_filter("Images", &["png", "jpg", "jpeg", "webp", "bmp"])
+        .pick_file(move |f| { let _ = tx.send(f); });
+
+    let file = rx.await.map_err(|_| "Dialog error".to_string())?;
+    let path_str = match file {
+        Some(p) => p.to_string(),
+        None    => return Ok(String::new()),
+    };
+
+    let src = PathBuf::from(&path_str);
+    let ext = src.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png")
+        .to_lowercase();
+
+    if !["png", "jpg", "jpeg", "webp", "bmp"].contains(&ext.as_str()) {
+        return Err("Formato no soportado".into());
+    }
+
+    let dir = launcher_user_data()
+        .map_err(|e| format!("No se pudo preparar la carpeta del launcher: {}", e))?;
+
+    // Eliminar cualquier logo personalizado anterior
+    for old_ext in &["png", "jpg", "jpeg", "webp", "bmp"] {
+        let _ = fs::remove_file(dir.join(format!("logo.{}", old_ext)));
+    }
+
+    let dest = dir.join(format!("logo.{}", ext));
+    fs::copy(&src, &dest).map_err(|e| format!("Error al copiar imagen: {}", e))?;
+
+    // Preserve existing settings, only update logo
+    let mut settings = load_settings(&dir).unwrap_or_else(|| LauncherSettings {
+        background: String::new(),
+        logo: String::new(),
+        hide_logo: false,
+    });
+    settings.logo = format!("logo.{}", ext);
+    fs::write(
+        settings_path(&dir),
+        serde_json::to_string_pretty(&settings)
+            .map_err(|e| format!("Error al serializar settings: {}", e))?,
+    )
+    .map_err(|e| format!("No se pudo guardar settings: {}", e))?;
+
+    image_to_data_url(&dest)
+}
+
+// Lee el logo personalizado configurado en settings.json, lo convierte a data URL y lo devuelve para mostrarlo en el frontend. Si no hay un logo configurado o si hay algún error (archivo no encontrado, error de lectura, error de conversión), devuelve None.
+
+#[tauri::command]
+fn get_custom_logo() -> Option<String> {
+    let dir = launcher_user_data().ok()?;
+    let settings = load_settings(&dir)?;
+    if settings.logo.is_empty() { return None; }
+    let candidate = dir.join(&settings.logo);
+    if candidate.exists() {
+        image_to_data_url(&candidate).ok()
+    } else {
+        None
+    }
+}
+
+// Configura si se debe ocultar el logo en el launcher editando settings.json. Devuelve un mensaje de éxito o error para mostrar al usuario.
+
+#[tauri::command]
+fn set_hide_logo(hide: bool) -> Result<(), String> {
+    let dir = launcher_user_data()
+        .map_err(|e| format!("No se pudo preparar la carpeta del launcher: {}", e))?;
+    let mut settings = load_settings(&dir).unwrap_or_else(|| LauncherSettings {
+        background: String::new(),
+        logo: String::new(),
+        hide_logo: false,
+    });
+    settings.hide_logo = hide;
+    fs::write(
+        settings_path(&dir),
+        serde_json::to_string_pretty(&settings)
+            .map_err(|e| format!("Error al serializar settings: {}", e))?,
+    )
+    .map_err(|e| format!("No se pudo guardar settings: {}", e))
+}
+
+#[tauri::command]
+fn get_hide_logo() -> bool {
+    launcher_user_data()
+        .ok()
+        .and_then(|dir| load_settings(&dir))
+        .map(|s| s.hide_logo)
+        .unwrap_or(false)
+}
+
+// Función principal que inicia el launcher. Configura los plugins de Tauri, define la función de setup (vacía en este caso) y registra los comandos que estarán disponibles para el frontend. Luego ejecuta la aplicación. Si hay algún error al ejecutar, se muestra un mensaje en la consola.
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|_app| {
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_supported_languages,
+            get_current_language_from_ini,
+            launch_game,
+            launch_studio,
+            open_folder,
+            get_setup_xml,
+            save_setup_xml,
+            set_fallback_font,
+            initialize_fonts,
+            get_plugin_states,
+            toggle_plugin,
+            get_console_enabled,
+            set_console_enabled,
+            pick_and_set_background,
+            get_custom_background,
+            pick_and_set_logo,
+            get_custom_logo,
+            set_hide_logo,
+            get_hide_logo
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+// Fin del código principal del launcher. Las funciones auxiliares y los comandos expuestos al frontend permiten gestionar la configuración del juego, los plugins, la apariencia del launcher y otras funcionalidades relacionadas con Koikatsu Sunshine.
+// deadshark
