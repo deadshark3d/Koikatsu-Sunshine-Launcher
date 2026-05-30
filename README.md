@@ -77,7 +77,7 @@ If you want to clone the project and build it yourself, you'll need Rust and Nod
 
 1. Clone the official repository:
 ```bash
-   git clone [https://github.com/deadshark3d/Koikatsu-Sunshine-Launcher.git](https://github.com/deadshark3d/Koikatsu-Sunshine-Launcher.git)
+   git clone https://github.com/deadshark3d/Koikatsu-Sunshine-Launcher.git
    cd Koikatsu-Sunshine-Launcher
 ```
 ---
