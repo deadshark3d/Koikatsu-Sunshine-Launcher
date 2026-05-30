@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Koikatsu Sunshine Launcher</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="launcher" id="launcher">
+
+  <div class="bg"></div>
+  <div class="logo"></div>
+
+
+  <!-- SETTINGS PANEL -->
+  <div class="panel" id="settings-panel">
+    <p class="settings-title">Settings</p>
+    <div class="settings-top-divider"></div>
+
+    <div class="settings-content">
+
+      <div class="settings-field">
+        <span class="field-lbl">Resolution</span>
+        <div class="cs-wrap" id="size-select" data-value="1280 x 720 (16 : 9)" style="width:250px;">
+          <div class="cs-inner">
+            <div class="cs-trigger">
+              <span class="cs-label">1280 × 720 (16:9)</span>
+              <img src="LauncherAssets/img/arrowlanguagecomobobox.svg" class="cs-arrow" alt="">
+            </div>
+            <div class="cs-list">
+              <div class="cs-opt" data-value="854 x 480 (16 : 9)">854 × 480 &nbsp;(16:9)</div>
+              <div class="cs-opt" data-value="960 x 600 (16 : 10)">960 × 600 &nbsp;(16:10)</div>
+              <div class="cs-opt" data-value="1024 x 576 (16 : 9)">1024 × 576 (16:9)</div>
+              <div class="cs-opt" data-value="1136 x 640 (16 : 9)">1136 × 640 (16:9)</div>
+              <div class="cs-opt selected" data-value="1280 x 720 (16 : 9)">1280 × 720 (16:9)</div>
+              <div class="cs-opt" data-value="1600 x 900 (16 : 9)">1600 × 900 (16:9)</div>
+              <div class="cs-opt" data-value="1920 x 1080 (16 : 9)">1920 × 1080 (16:9)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <span class="field-lbl">Custom Size</span>
+        <input type="number" id="width-input"  class="glass-input" style="width:115px;" min="320" placeholder="Width">
+        <span class="x-sep">×</span>
+        <input type="number" id="height-input" class="glass-input" style="width:115px;" min="180" placeholder="Height">
+      </div>
+
+      <div class="settings-field">
+        <span class="field-lbl">Quality</span>
+        <div class="cs-wrap" id="quality-select" data-value="1" style="width:114px;">
+          <div class="cs-inner">
+            <div class="cs-trigger">
+              <span class="cs-label">Medium</span>
+              <img src="LauncherAssets/img/arrowlanguagecomobobox.svg" class="cs-arrow" alt="">
+            </div>
+            <div class="cs-list">
+              <div class="cs-opt" data-value="0">Low</div>
+              <div class="cs-opt selected" data-value="1">Medium</div>
+              <div class="cs-opt" data-value="2">High</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <span class="field-lbl">Fullscreen</span>
+        <label class="glass-chk">
+          <input type="checkbox" id="fullscreen-check">
+          <span class="chk-box"><img src="LauncherAssets/img/Check.svg" class="chk-icon" alt="✓"></span>
+        </label>
+      </div>
+
+      <div class="settings-field">
+        <span class="field-lbl">Display</span>
+        <input type="number" id="display-input" class="glass-input display-input" value="1" min="1" max="9">
+      </div>
+
+      <div class="settings-field">
+        <span class="field-lbl">Language</span>
+        <div class="cs-wrap" id="language-select" data-value="0" data-code="ja" style="width:250px;">
+          <div class="cs-inner">
+            <div class="cs-trigger">
+              <span class="cs-label">Japanese</span>
+              <img src="LauncherAssets/img/arrowlanguagecomobobox.svg" class="cs-arrow" alt="">
+            </div>
+            <div class="cs-list">
+              <div class="cs-group-label">🌏 East Asia</div>
+              <div class="cs-opt selected" data-value="0"  data-code="ja">Japanese</div>
+              <div class="cs-opt"          data-value="1"  data-code="zh">Chinese</div>
+              <div class="cs-opt"          data-value="2"  data-code="ko">Korean</div>
+              <div class="cs-group-label">🌏 Southeast Asia</div>
+              <div class="cs-opt" data-value="3"  data-code="th">Thai</div>
+              <div class="cs-opt" data-value="4"  data-code="vi">Vietnamese</div>
+              <div class="cs-opt" data-value="5"  data-code="id">Indonesian</div>
+              <div class="cs-opt" data-value="6"  data-code="tl">Filipino</div>
+              <div class="cs-group-label">🌏 South Asia</div>
+              <div class="cs-opt" data-value="7"  data-code="hi">Hindi</div>
+              <div class="cs-opt" data-value="8"  data-code="ur">Urdu</div>
+              <div class="cs-group-label">🌍 Western Europe</div>
+              <div class="cs-opt" data-value="9"  data-code="en">English</div>
+              <div class="cs-opt" data-value="10" data-code="fr">French</div>
+              <div class="cs-opt" data-value="11" data-code="de">German</div>
+              <div class="cs-opt" data-value="12" data-code="it">Italian</div>
+              <div class="cs-opt" data-value="13" data-code="nl">Dutch</div>
+              <div class="cs-opt" data-value="14" data-code="fi">Finnish</div>
+              <div class="cs-opt" data-value="15" data-code="sv">Swedish</div>
+              <div class="cs-opt" data-value="16" data-code="no">Norwegian</div>
+              <div class="cs-group-label">🌍 Eastern Europe</div>
+              <div class="cs-opt" data-value="17" data-code="pl">Polish</div>
+              <div class="cs-opt" data-value="18" data-code="uk">Ukrainian</div>
+              <div class="cs-opt" data-value="19" data-code="sr">Serbian</div>
+              <div class="cs-opt" data-value="20" data-code="bg">Bulgarian</div>
+              <div class="cs-opt" data-value="21" data-code="hr">Croatian</div>
+              <div class="cs-opt" data-value="22" data-code="cs">Czech</div>
+              <div class="cs-opt" data-value="23" data-code="sk">Slovak</div>
+              <div class="cs-opt" data-value="24" data-code="hu">Hungarian</div>
+              <div class="cs-opt" data-value="25" data-code="ro">Romanian</div>
+              <div class="cs-opt" data-value="26" data-code="el">Greek</div>
+              <div class="cs-group-label">🌍 Baltic</div>
+              <div class="cs-opt" data-value="27" data-code="et">Estonian</div>
+              <div class="cs-opt" data-value="28" data-code="lv">Latvian</div>
+              <div class="cs-group-label">🌍 Southern Europe</div>
+              <div class="cs-opt" data-value="29" data-code="es">Spanish</div>
+              <div class="cs-opt" data-value="30" data-code="pt">Portuguese</div>
+              <div class="cs-group-label">🌍 Caucasus &amp; Eurasia</div>
+              <div class="cs-opt" data-value="31" data-code="ka">Georgian</div>
+              <div class="cs-opt" data-value="32" data-code="az">Azerbaijani</div>
+              <div class="cs-opt" data-value="33" data-code="ru">Russian</div>
+              <div class="cs-opt" data-value="34" data-code="kk">Kazakh</div>
+              <div class="cs-opt" data-value="35" data-code="uz">Uzbek</div>
+              <div class="cs-group-label">🌍 Middle East</div>
+              <div class="cs-opt" data-value="36" data-code="ar">Arabic</div>
+              <div class="cs-opt" data-value="37" data-code="fa">Persian</div>
+              <div class="cs-opt" data-value="38" data-code="tr">Turkish</div>
+              <div class="cs-opt" data-value="39" data-code="he">Hebrew</div>
+              <div class="cs-opt" data-value="40" data-code="ku">Kurdish</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plugins -->
+      <p class="settings-plugins-title">Plugins</p>
+      <div class="settings-plugins-divider"></div>
+
+      <div class="plugin-row">
+        <label class="glass-chk">
+          <input type="checkbox" id="toggle-console">
+          <span class="chk-box"><img src="LauncherAssets/img/Check.svg" class="chk-icon" alt="✓"></span>
+        </label>
+        <span>Enable Console</span>
+      </div>
+      <div class="plugin-row">
+        <label class="glass-chk">
+          <input type="checkbox" id="toggle-rimremover">
+          <span class="chk-box"><img src="LauncherAssets/img/Check.svg" class="chk-icon" alt="✓"></span>
+        </label>
+        <span>Enable RimRemover</span>
+      </div>
+      <div class="plugin-row">
+        <label class="glass-chk">
+          <input type="checkbox" id="toggle-autosave">
+          <span class="chk-box"><img src="LauncherAssets/img/Check.svg" class="chk-icon" alt="✓"></span>
+        </label>
+        <span>Enable Autosave</span>
+      </div>
+      <div class="plugin-row">
+        <label class="glass-chk">
+          <input type="checkbox" id="toggle-stiletto">
+          <span class="chk-box"><img src="LauncherAssets/img/Check.svg" class="chk-icon" alt="✓"></span>
+        </label>
+        <span>Enable Stiletto</span>
+      </div>
+      <div class="plugin-row">
+        <label class="glass-chk">
+          <input type="checkbox" id="toggle-hide-logo">
+          <span class="chk-box"><img src="LauncherAssets/img/Check.svg" class="chk-icon" alt="✓"></span>
+        </label>
+        <span>Hide Logo</span>
+      </div>
+
+      <button id="btn-change-bg"   class="change-bg-btn">Change Background</button>
+      <button id="btn-change-logo" class="change-bg-btn">Change Logo</button>
+      <button id="btn-save"        class="save-btn">Save</button>
+
+    </div><!-- .settings-content -->
+  </div>
+
+
+  <!-- FOLDERS PANEL -->
+  <div class="panel folders-panel" id="folders-panel">
+    <p class="panel-title">Folders</p>
+    <div class="panel-divider" style="top:44px;"></div>
+
+    <button class="folder-btn" data-path="UserData\chara"          style="left:25px;  top:63px;  width:140px;">Characters</button>
+    <button class="folder-btn" data-path="UserData\chara\male"     style="left:25px;  top:112px; width:140px;">Male</button>
+    <button class="folder-btn" data-path="UserData\chara\female"   style="left:25px;  top:161px; width:140px;">Female</button>
+    <button class="folder-btn" data-path="UserData\coordinate"     style="left:25px;  top:210px; width:140px;">Outfits</button>
+    <button class="folder-btn" data-path="UserData\Studio\scene"   style="left:180px; top:63px;  width:140px;">Scenes</button>
+    <button class="folder-btn" data-path="UserData\cap"            style="left:180px; top:112px; width:140px;">Screenshots</button>
+    <button class="folder-btn" data-path="UserData\Overlays"       style="left:180px; top:161px; width:140px;">Overlays</button>
+    <button class="folder-btn" data-path="UserData\MaterialEditor" style="left:180px; top:210px; width:295px;">Material Editor</button>
+    <button class="folder-btn" data-path="BepInEx"                 style="left:335px; top:63px;  width:140px;">BepInEx</button>
+    <button class="folder-btn" data-path="mods"                    style="left:335px; top:112px; width:140px;">Mods</button>
+    <button class="folder-btn" data-path="."                       style="left:335px; top:161px; width:140px;">Game Folder</button>
+  </div>
+
+
+  <!-- BOTTOM BUTTONS -->
+  <button class="btm-btn" id="btn-settings" style="width:85px;  left:34px;">
+    <img src="LauncherAssets/img/gear.svg" class="btm-icon gear-icon" width="40" height="40" alt="">
+  </button>
+  <button class="btm-btn" id="btn-folders"  style="width:150px; left:139px;">
+    <span>Folders</span>
+  </button>
+  <button class="btm-btn launch-btn" id="btn-studio" style="width:250px; left:479px;">
+    <span>Chara Studio</span>
+  </button>
+  <button class="btm-btn launch-btn" id="btn-game"   style="width:250px; left:749px;">
+    <span>Koikatsu!<br>Sunshine</span>
+  </button>
+
+
+  <!-- CONTROLS -->
+  <div class="controls" id="controls">
+    <button class="ctrl-btn" id="btn-minimize" title="Minimize">
+      <img src="LauncherAssets/img/minus.svg" width="20" height="4" alt="—">
+    </button>
+    <button class="ctrl-btn" id="btn-theme" title="Toggle Theme">
+      <img src="LauncherAssets/img/lighttheme.svg" id="theme-icon" width="22" height="22" alt="">
+    </button>
+    <button class="ctrl-btn" id="btn-close" title="Close">
+      <img src="LauncherAssets/img/cross.svg" width="17" height="17" alt="✕">
+    </button>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>
+
+<!-- Koikatsu Sunshine Launcher -->
+<!-- deadshark -->

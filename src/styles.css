@@ -1,0 +1,746 @@
+/* ============================================================
+   LAUNCHER — Koikatsu Sunshine
+   ============================================================ */
+
+
+/* — Fuente personalizada — */
+
+@font-face {
+  font-family: 'Cal Sans';
+  src: url('LauncherAssets/uifont/CalSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+
+/* ============================================================
+   VARIABLES — dark (default) / light
+   Cambiar tema: atributo data-theme en el elemento raíz.
+   ============================================================ */
+
+:root {
+  --glass:        rgba(0, 0, 0, 0.65);
+  --glass-panel:  rgba(0, 0, 0, 0.65);
+  --glass-input:  rgba(0, 0, 0, 0.55);
+  --glass-shadow: rgba(0, 0, 0, 0.35);
+  --text:         #ffffff;
+  --text-dim:     rgba(255, 255, 255, 0.55);
+  --divider:      rgba(255, 255, 255, 0.13);
+  --glow:         rgba(255, 255, 255, 0.45);
+  --glow-sm:      rgba(255, 255, 255, 0.28);
+  --hover-bg:     rgba(255, 255, 255, 0.88);
+  --hover-text:   #111111;
+  --hover-filter: brightness(0);
+  --icon-filter:  brightness(10);
+  --cs-opt-hover: rgba(255, 255, 255, 0.09);
+  --cs-opt-sel:   rgba(255, 255, 255, 0.16);
+  --font:         'Cal Sans', system-ui, sans-serif;
+  --radius:       13.5px;
+  --radius-sm:    8.5px;
+}
+
+[data-theme="light"] {
+  --glass:        rgba(255, 255, 255, 0.55);
+  --glass-panel:  rgba(255, 255, 255, 0.72);
+  --glass-input:  rgba(255, 255, 255, 0.55);
+  --glass-shadow: rgba(0, 0, 0, 0.18);
+  --text:         #111111;
+  --text-dim:     rgba(0, 0, 0, 0.45);
+  --divider:      rgba(0, 0, 0, 0.12);
+  --glow:         rgba(0, 0, 0, 0.25);
+  --glow-sm:      rgba(0, 0, 0, 0.15);
+  --hover-bg:     rgba(0, 0, 0, 0.78);
+  --hover-text:   #ffffff;
+  --hover-filter: brightness(10);
+  --icon-filter:  brightness(0);
+  --cs-opt-hover: rgba(0, 0, 0, 0.07);
+  --cs-opt-sel:   rgba(0, 0, 0, 0.13);
+}
+
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 1024px; height: 576px;
+  overflow: hidden;
+  background: transparent;
+  border-radius: 8px;
+}
+
+/* Contenedor raíz del launcher — tamaño fijo, selección de texto desactivada */
+.launcher {
+  width: 1024px; height: 576px;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--font);
+  color: var(--text);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Fondo */
+.bg {
+  position: absolute; inset: 0;
+  background: url('LauncherAssets/img/bg.png') center/cover no-repeat;
+  box-shadow: 0 0 10px #8e8e93 inset;
+  border-radius: 8px;
+  z-index: 0;
+  will-change: transform;
+}
+[data-theme="light"] .bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255, 255, 255, 0.050);
+  border-radius: inherit;
+}
+
+/* Logo — drop-shadow para visibilidad sobre fondos complejos */
+.logo {
+  position: absolute;
+  width: 469px; height: 250px;
+  left: 277px; top: 52px;
+  background: url('LauncherAssets/img/logo.png') center/contain no-repeat;
+  filter: drop-shadow(0px 5px 100px rgba(255,255,255,0.5));
+  z-index: 1; pointer-events: none;
+}
+
+
+/* ============================================================
+   CONTROLES (minimizar · tema · cerrar)
+   ============================================================ */
+
+.controls {
+  position: absolute;
+  top: 17px;
+  gap: 0px;
+  padding: 0 4px;
+  width: 110px; height: 45px;
+  left: 907px; top: 8px;
+  background: var(--glass);
+  border-radius: 12px;
+  box-shadow:
+    0 4px 18px var(--glass-shadow),
+    0 0 0 1px var(--divider) inset;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  padding: 0 6px;
+  z-index: 100;
+  backdrop-filter: blur(12px) brightness(1.05) saturate(1);
+  -webkit-backdrop-filter: blur(12px) brightness(1.05) saturate(1);
+}
+
+.ctrl-btn {
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.18s;
+}
+
+.ctrl-btn:hover  { background: rgba(255,255,255,0.18); }
+.ctrl-btn:active { background: rgba(255,255,255,0.30); }
+[data-theme="light"] .ctrl-btn:hover  { background: rgba(0,0,0,0.12); }
+[data-theme="light"] .ctrl-btn:active { background: rgba(0,0,0,0.22); }
+.controls img { display: block; filter: var(--icon-filter); pointer-events: none; }
+
+/* Ajuste fino de posición por botón */
+.controls .ctrl-btn:nth-child(1) { margin-top: 0px; margin-left: 0px; margin-right: 0px; }   /* minimizar */
+.controls .ctrl-btn:nth-child(2) { margin-top: 0px; margin-left: 0px; margin-right: -4px; }   /* tema */
+.controls .ctrl-btn:nth-child(3) { margin-top: 0px; margin-left: 0px; margin-right: 0px; }   /* cerrar */
+
+
+/* ============================================================
+   BOTONES INFERIORES
+   ============================================================ */
+
+/* Botón base — glassmorphism, texto con glow */
+.btm-btn {
+  position: absolute; height: 70px; top: 489px;
+  background: var(--glass); border: none;
+  border-radius: var(--radius);
+  box-shadow:
+    0 6px 24px var(--glass-shadow),
+    0 0 0 1px var(--divider) inset;
+  color: var(--text);
+  text-shadow: 0 0 12px var(--glow);
+  font-family: var(--font); font-size: 24px;
+  font-weight: 400; letter-spacing: 1.2px;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; z-index: 10;
+  backdrop-filter: blur(14px) brightness(1.05) saturate(1);
+  -webkit-backdrop-filter: blur(14px) brightness(1.05) saturate(1);
+  transition:
+    background    .20s ease,
+    color         .20s ease,
+    text-shadow   .20s ease,
+    transform     .10s ease,
+    box-shadow    .20s ease;
+}
+
+.btm-btn:hover {
+  background:  var(--hover-bg);
+  color:       var(--hover-text);
+  text-shadow: none;
+  box-shadow:
+    0 6px 28px var(--glass-shadow),
+    0 0 0 1px transparent inset;
+}
+.btm-btn:active { transform: scale(0.97); }
+.btm-btn span   { transition: color .20s; text-align: center; line-height: 1.2; }
+
+/* Icono genérico dentro de btm-btn */
+.btm-icon {
+  filter: var(--icon-filter);
+  transition: filter .20s;
+}
+.btm-btn:hover .btm-icon:not(.gear-icon) { filter: var(--hover-filter); }
+
+/* Estado activo (panel abierto) */
+.btm-btn.active-btn {
+  background: rgba(255,255,255,0.90);
+  color: #111; text-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme="light"] .btm-btn.active-btn { background: rgba(0,0,0,0.80); color: #fff; }
+[data-theme="light"] .btm-btn.active-btn .btm-icon { filter: brightness(10); }
+
+/* Engranaje — rota 90° en hover, 135° cuando el panel está abierto */
+#btn-settings { overflow: visible; }
+#btn-settings .gear-icon {
+  width: 40px; height: 40px;
+  display: block; pointer-events: none;
+  transform-box: fill-box;
+  -webkit-transform-box: fill-box;
+  transform-origin: 50% 50%;
+  -webkit-transform-origin: center center;
+  transform: rotate(0deg);
+  filter: var(--icon-filter) drop-shadow(0 0 10px var(--glow));
+  transition: transform .40s cubic-bezier(0.34, 1.56, 0.64, 1), filter .20s ease;
+  will-change: transform;
+}
+#btn-settings:hover .gear-icon {
+  transform: rotate(90deg);
+  filter: var(--hover-filter) drop-shadow(0 0 10px var(--glow));
+}
+#btn-settings.active-btn .gear-icon {
+  transform: rotate(135deg);
+  filter: var(--hover-filter) drop-shadow(0 0 10px var(--glow));
+}
+
+
+/* ============================================================
+   PANELES FLOTANTES
+   Ocultos por defecto; .visible activa la transición de entrada.
+   ============================================================ */
+
+.panel {
+  position: absolute;
+  background: var(--glass-panel);
+  box-shadow:
+    0 10px 53px 20px var(--glass-shadow),
+    0 0 0 1px var(--divider) inset;
+  border-radius: var(--radius);
+  z-index: 50;
+  overflow: visible;
+  opacity: 0; pointer-events: none;
+  transform: translateY(-8px) scale(0.97);
+  transition: opacity .22s ease, transform .22s ease;
+  backdrop-filter: blur(20px) brightness(1.05) saturate(1);
+  -webkit-backdrop-filter: blur(20px) brightness(1.05) saturate(1);
+}
+.panel.visible { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+
+.panel-title {
+  margin: 0;
+  padding: 10px 18px 8px;
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 4px;
+  font-weight: 500;
+  color: var(--text);
+  text-shadow: 0 0 12px var(--glow);
+  pointer-events: none;
+}
+
+.panel-divider {
+  position: absolute;
+  left: 16px; right: 16px;
+  height: 1px;
+  background: var(--divider);
+}
+
+.folders-panel { width: 500px; height: 275px; left: 262px; top: 148px; }
+
+
+/* ============================================================
+   PANEL DE AJUSTES
+   ============================================================ */
+
+#settings-panel {
+  width: 440px;
+  height: 465px;
+  left: 292px;
+  top: 15px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-title, .settings-plugins-title {
+  text-align: center;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--text);
+  text-shadow: 0 0 12px var(--glow);
+  margin: 0;
+  pointer-events: none;
+  font-weight: 500;
+}
+
+.settings-top-divider, .settings-plugins-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--divider);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+.settings-top-divider    { margin: 2px 0 10px 0; }
+.settings-plugins-divider { margin: -9px 0 0px 0; }
+
+/* Área scrollable de campos */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: visible;
+  padding-right: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Fila de campo: label + control */
+.settings-field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 8px;
+  position: relative;
+}
+
+.field-lbl {
+  width: 130px;
+  font-size: 18px;
+  letter-spacing: 0.8px;
+  color: var(--text);
+  text-shadow: 0 0 8px var(--glow-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 35px;
+  pointer-events: none;
+}
+
+/* Separador "×" entre inputs de ancho y alto */
+.x-sep {
+  font-size: 17px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  height: 35px;
+  pointer-events: none;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Fila de plugin (checkbox + nombre) */
+.plugin-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 0 10px;
+}
+.plugin-row .glass-chk { gap: 0; }
+.plugin-row .chk-box   { width: 28px; height: 28px; }
+.plugin-row .chk-icon  { width: 14px; height: 10px; }
+.plugin-row > span {
+  font-size: 17px;
+  letter-spacing: 0.6px;
+  color: var(--text);
+  text-shadow: 0 0 8px var(--glow-sm);
+  line-height: 1;
+  user-select: none;
+}
+
+/* Contención de z-index para los controles dentro del panel */
+#settings-panel .glass-input,
+#settings-panel .glass-chk,
+#settings-panel .cs-wrap     { position: relative; flex-shrink: 0; }
+#settings-panel .cs-wrap.open { z-index: 9999; }
+
+/* Anchos de controles individuales */
+#settings-panel #size-select    { width: 218px; }
+#settings-panel #width-input    { width: 102px; }
+#settings-panel #height-input   { width: 102px; }
+#settings-panel #quality-select { width: 128px; }
+#settings-panel #display-input  { width: 115px; }
+#settings-panel #language-select { width: 258px; }
+
+
+/* ============================================================
+   CUSTOM SELECT
+   ============================================================ */
+
+.cs-wrap { position: relative; z-index: 1; }
+.cs-wrap.open { z-index: 9999; }
+
+.cs-inner {
+  width: 100%;
+  background: var(--glass-input);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: border-color .25s cubic-bezier(0.4,0,0.2,1), border-radius .25s cubic-bezier(0.4,0,0.2,1), box-shadow .25s cubic-bezier(0.4,0,0.2,1);
+  overflow: visible;
+  z-index: inherit;
+}
+
+/* Borde superior redondeado al abrir; el fondo se convierte en tapa del dropdown */
+.cs-wrap.open .cs-inner {
+  border-color: rgba(255,255,255,0.22);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+[data-theme="light"] .cs-wrap.open .cs-inner {
+  border-color: rgba(0,0,0,0.18);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+}
+
+.cs-trigger {
+  height: 35px; display: flex; align-items: center;
+  padding: 0 26px 0 11px; cursor: pointer; position: relative;
+  border-radius: var(--radius-sm);
+  transition: background .2s ease, border-radius .25s cubic-bezier(0.4,0,0.2,1);
+}
+.cs-wrap.open .cs-trigger { border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+.cs-trigger:hover { background: rgba(255,255,255,0.06); }
+[data-theme="light"] .cs-trigger:hover { background: rgba(0,0,0,0.04); }
+
+.cs-label {
+  flex: 1;
+  font-family: var(--font);
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+/* Flecha — rota 180° al abrir */
+.cs-arrow {
+  position: absolute; right: 9px; top: 50%;
+  transform: translateY(-50%) rotate(0deg);
+  width: 13px; height: 7px;
+  filter: var(--icon-filter);
+  opacity: 0.65;
+  transition: transform .3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity .2s;
+  pointer-events: none;
+}
+.cs-wrap.open .cs-arrow   { transform: translateY(-50%) rotate(180deg); opacity: 0.9; }
+.cs-trigger:hover .cs-arrow { opacity: 0.85; }
+
+/* Lista desplegable — max-height animado para el efecto de apertura */
+.cs-list {
+  position: absolute;
+  top: 100%; left: 0; right: 0;
+  background: var(--glass-panel);
+  backdrop-filter: blur(20px) brightness(1.05) saturate(1);
+  -webkit-backdrop-filter: blur(20px) brightness(1.05) saturate(1);
+  border: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  max-height: 0; min-height: 0;
+  overflow: hidden;
+  box-shadow: none;
+  opacity: 0; z-index: 1;
+  transition: max-height .35s cubic-bezier(0.4,0,0.2,1), box-shadow .35s cubic-bezier(0.4,0,0.2,1), opacity .2s ease;
+  pointer-events: none;
+}
+.cs-wrap.open .cs-list {
+  max-height: 280px;
+  overflow-y: auto; overflow-x: hidden;
+  pointer-events: auto;
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  opacity: 1; z-index: 9999;
+  transition: max-height .35s cubic-bezier(0.4,0,0.2,1), box-shadow .35s cubic-bezier(0.4,0,0.2,1), opacity .2s ease;
+}
+
+.cs-opt, .cs-group-label {
+  padding: 8px 11px;
+  font-family: var(--font);
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s ease;
+  line-height: 1.4;
+}
+
+/* Etiqueta de grupo — decorativa, no interactiva */
+.cs-group-label {
+  padding: 10px 11px 6px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  cursor: default;
+  background: transparent;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.cs-opt                    { background: transparent; }
+.cs-opt:hover              { background: var(--cs-opt-hover); }
+.cs-opt.selected           { background: var(--cs-opt-sel); color: var(--text); font-weight: 500; }
+[data-theme="light"] .cs-opt:hover    { background: var(--cs-opt-hover); }
+[data-theme="light"] .cs-opt.selected { background: var(--cs-opt-sel); }
+
+
+/* ============================================================
+   INPUTS DE TEXTO (glassmorphism)
+   ============================================================ */
+
+.glass-input {
+  position: relative; height: 35px;
+  background: var(--glass-input);
+  border: 1px solid var(--divider); border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--font);
+  font-size: 16px; letter-spacing: 0.6px; padding: 0 8px; outline: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.20), 0 0 0 1px var(--divider) inset;
+  transition: border-color .15s, box-shadow .15s;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+/* Ocultar spinners nativos */
+.glass-input::-webkit-inner-spin-button,
+.glass-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.glass-input:focus {
+  border-color: rgba(255,255,255,0.35);
+  box-shadow: 0 3px 16px rgba(0,0,0,0.32), 0 0 0 1px rgba(255,255,255,0.25) inset;
+}
+[data-theme="light"] .glass-input:focus {
+  border-color: rgba(0,0,0,0.28);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.18) inset;
+}
+.glass-input::placeholder { color: var(--text-dim); opacity: 1; }
+.display-input { text-align: center; padding: 0 4px; font-size: 16px !important; letter-spacing: 0.4px !important; }
+
+
+/* ============================================================
+   CHECKBOXES PERSONALIZADOS
+   El nativo se oculta; .chk-box + .chk-icon reconstruyen el control.
+   ============================================================ */
+
+.glass-chk { position: relative; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.glass-chk.inline { position: relative; }
+.glass-chk input[type="checkbox"] { display: none; }
+
+.chk-box {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: var(--glass-input);
+  border: 1px solid var(--divider); border-radius: var(--radius-sm);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+  transition: background .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.glass-chk:hover .chk-box             { border-color: rgba(255,255,255,0.35); }
+[data-theme="light"] .glass-chk:hover .chk-box { border-color: rgba(0,0,0,0.28); }
+
+/* Icono de check — aparece con scale desde 0.5 */
+.chk-icon {
+  width: 18px; height: 13px; filter: var(--icon-filter);
+  opacity: 0; transform: scale(0.5);
+  transition: opacity .2s cubic-bezier(0.4,0,0.2,1), transform .2s cubic-bezier(0.4,0,0.2,1);
+}
+.glass-chk input:checked + .chk-box .chk-icon { opacity: 1; transform: scale(1); }
+.glass-chk input:checked + .chk-box {
+  background: rgba(255,255,255,0.20); border-color: rgba(255,255,255,0.30);
+}
+[data-theme="light"] .glass-chk input:checked + .chk-box {
+  background: rgba(0,0,0,0.14); border-color: rgba(0,0,0,0.25);
+}
+
+
+/* ============================================================
+   BOTÓN GUARDAR / CHANGE BG
+   ============================================================ */
+
+.save-btn {
+  height: 34px; width: 95%; padding: 0;
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.28); border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--font); font-size: 16px; letter-spacing: 0.8px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+  transition: background .15s, transform .1s;
+  align-self: center;
+  margin-top: 2px;
+  margin-bottom: 12px;
+}
+.save-btn:hover  { background: rgba(255,255,255,0.28); }
+.save-btn:active { transform: scale(0.96); }
+[data-theme="light"] .save-btn       { background: rgba(0,0,0,0.10); border-color: rgba(0,0,0,0.18); }
+[data-theme="light"] .save-btn:hover { background: rgba(0,0,0,0.20); }
+
+.change-bg-btn {
+  height: 34px; width: 95%; padding: 0;
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.28); border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--font); font-size: 16px; letter-spacing: 0.8px;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+  transition: background .15s, transform .1s;
+  align-self: center; margin-top: 0px;
+}
+.change-bg-btn:hover  { background: rgba(255,255,255,0.20); }
+.change-bg-btn:active { transform: scale(0.96); }
+[data-theme="light"] .change-bg-btn       { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.15); }
+[data-theme="light"] .change-bg-btn:hover { background: rgba(0,0,0,0.16); }
+
+
+/* ============================================================
+   BOTONES DE CARPETAS
+   ============================================================ */
+
+.folder-btn {
+  position: absolute; height: 35px;
+  background: var(--glass-input);
+  border: 1px solid var(--divider); border-radius: var(--radius-sm);
+  color: var(--text); text-shadow: 0 0 8px var(--glow-sm);
+  font-family: var(--font); font-size: 17px; letter-spacing: 0.8px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.22);
+  transition: background .17s, color .17s, text-shadow .17s, transform .10s, border-color .17s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.folder-btn:hover  { background: var(--hover-bg); color: var(--hover-text); text-shadow: none; border-color: transparent; }
+.folder-btn:active { transform: scale(0.96); }
+
+
+/* ============================================================
+   GRADIENT TEXT EN HOVER — Launch buttons
+   ============================================================ */
+
+/* Chara Studio — esmeralda */
+#btn-studio:hover span {
+  background: linear-gradient(
+    225deg,
+    #A4FFA4 0%,
+    #26DB3C 28%,
+    #F7FF7B 50%,
+    #26DF39 72%,
+    #1ae03b 100%
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: silkEmeraldFlow 12s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 3px rgba(167, 243, 208, 0.5))
+    drop-shadow(0 0 3px rgba(16, 185, 129, 0.4));
+}
+@keyframes silkEmeraldFlow {
+  0%   { background-position: 100% 0%;   }
+  50%  { background-position: 0%   100%; }
+  100% { background-position: 100% 0%;   }
+}
+
+/* Koikatsu — rosa sunset */
+#btn-game:hover span {
+  background: linear-gradient(
+    225deg,
+    hsla(326, 96%, 72%, 0.1) 0%,
+    #fc73c1 28%,
+    #FFF2D9 50%,
+    #FFFDCA 72%,
+    #fc73c1 100%
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: silkSunsetFlow 12s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 3px rgba(255, 248, 112, 0.5))
+    drop-shadow(0 0 3px rgba(246, 57, 126, 0.4));
+}
+@keyframes silkSunsetFlow {
+  0%   { background-position: 0%   100%; }
+  50%  { background-position: 100% 0%;   }
+  100% { background-position: 0%   100%; }
+}
+
+/* Limpiar -webkit-text-fill-color al salir del hover */
+#btn-studio span,
+#btn-game   span { -webkit-text-fill-color: inherit; }
+
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+.toast {
+  position: absolute; bottom: 230px; left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--glass-panel); color: var(--text);
+  font-family: var(--font); font-size: 17px; letter-spacing: 0.8px;
+  padding: 8px 22px; border-radius: var(--radius);
+  border: 1px solid var(--divider);
+  box-shadow: 0 6px 24px var(--glass-shadow);
+  backdrop-filter: blur(20px) brightness(1.05) saturate(1);
+  -webkit-backdrop-filter: blur(20px) brightness(1.05) saturate(1);
+  opacity: 0; pointer-events: none; z-index: 200; white-space: nowrap;
+  transition: opacity .25s ease, transform .25s ease;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar              { width: 8px; }
+::-webkit-scrollbar-track        { background: transparent; }
+::-webkit-scrollbar-thumb        { background: rgba(255,255,255,0.22); border-radius: 3px; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); }
+
+
+/* ============================================================
+   TRANSICIÓN DE TEMA — blur rápido
+   ============================================================ */
+
+.launcher.theme-blur {
+  animation: theme-blur 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes theme-blur {
+  0%   { filter: blur(0px) brightness(1);    }
+  43%  { filter: blur(9px)  brightness(0.82); }
+  100% { filter: blur(0px) brightness(1);    }
+}
+
+/* fin del css */
+/* deadshark */
